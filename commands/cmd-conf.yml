@@ -1,0 +1,6 @@
+# yamllint disable rule:line-length
+custom-commands:
+  - name: conf
+    help: output the executable ~/.jira.d/config.yml
+    script: |
+      ~/.jira.d/config.yml

@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+#
+# An opinionated and modular config generator for go-yaml.
+#
+# © Copyright 2022 Clay Loveless
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+#limitations under the License.
+#
+set -eu
+IFS=$'\n'
+
+cat <<endintro
+%YAML 1.1
+---
+#
+# An opinionated and modular executable config for go-yaml.
+#
+# Installation: Copy this file to ~/.jira.d/config.yml and make sure it's
+# exectuable.
+#
+# NOTE: This loader will _not_ read from any paths ending in .jira.d/config.yml,
+# because go-yaml picks those up recursively already.
+#
+# Key to the generated comments:
+#
+#   INC(auth) ........... First filename matching auth.yml.
+#   INC(cc) ............. Custom Command(s) found in file.
+#   INC(cmd) ............ Custom Command(s) found in filename matching cmd-*.yml.
+#   INC(yml) ............ File found in a .jira.d directory with no
+#                           custom commands.
+#   SKIP(auth) .......... Skipped auth.yml file, because one was found closer
+#                           to the current working directory.
+#   SKIP(config) ........ Skipped config.yml file. go-jira will find and load.
+#   SKIP(exec) .......... Skipped an executable .yml file.
+#
+
+endintro
+
+lastdir=$(dirname "$HOME")
+custom_commands=""
+fname=""
+oneauth=0
+files=""
+found=""
+buffer=""
+str=""
+ccregex=".*custom-commands:.*"
+
+# if file is a custom-commands file, such as in a
+# .jira.d/commands/*.yml directory, append to custom_commands.
+# Otherwise, output contents of .yml file
+checkForCustomCommands() {
+  local buf=""
+  if [ ! -x "$1" ]; then
+    # read file into buf
+    buf=$(<"$1")
+
+    # if file has custom-commands, add to custom-commands buffer
+    if [[ "${buf}" =~ $ccregex ]]; then
+      custom_commands+="  #"$'\n'
+      custom_commands+="  # INC(cc): ${1/$HOME/~}"$'\n'
+      custom_commands+="  #"$'\n'
+      custom_commands+=$(sed -e 's/^[[:space:]]*\#.*//' -e 's/^custom-commands://' -e '/^$/d' <<< "${buf}")$'\n'
+    else
+      printf "%-16s %s" "# INC(yml):" "${1/$HOME/~}"$'\n'
+      echo "${buf}"
+    fi
+
+  else
+    printf "%-16s %s" "# SKIP(exec):" "${1/$HOME/~}"$'\n'
+  fi
+}
+
+# FIRST PASS
+# Crawl up the directory tree, looking in each .jira.d directory
+# we find along the way.
+# gather all .jira.d/**/*.yml files, newline separated
+while [ "$PWD" != "$lastdir" ]; do
+  files=$(find "$PWD/.jira.d" -name "*.yml" -print 2>/dev/null | xargs -I{} echo {})
+  if [ "x" != "x${files}" ]; then
+    found+="${files}"$'\n'
+  fi
+  builtin cd ..
+done
+
+# trim trailing whitespace
+found="${found%"${found##*[![:space:]]}"}"
+
+# SECOND PASS
+# process the found files list
+while read -r file; do
+  fname=$(basename $file)
+  case "${fname}" in
+    config.yml)
+      # skip these, go-jira will handle them
+      printf "%-16s %s" "# SKIP(config):" "${file/$HOME/~}"$'\n'
+      continue
+      ;;
+    auth.yml)
+      if [ "$oneauth" -eq 0 ]; then
+        oneauth=1
+        printf "%-16s %s" "# INC(auth):" "${file/$HOME/~}"$'\n'
+        cat "$file"
+      else
+        printf "%-16s %s" "# SKIP(auth):" "${file/$HOME/~}"$'\n'
+      fi
+      ;;
+    cmd-*.yml)
+      custom_commands+="  #"$'\n'
+      custom_commands+="  # INC(cmd): ${file/$HOME/~}"$'\n'
+      custom_commands+="  #"$'\n'
+      buffer=$(sed -e 's/^[[:space:]]*\#.*//' -e 's/^custom-commands://' -e '/^$/d' "$file")
+      custom_commands+="${buffer}"$'\n'
+      ;;
+    *)
+      # check for custom-commands
+      checkForCustomCommands "${file}"
+      ;;
+  esac
+done <<< "${found}"
+
+# Output custom-commands block if we found any
+if [ "${custom_commands}x" != "x" ]; then
+  echo
+  echo "custom-commands:"
+  echo "$custom_commands"
+fi
+
+
+# --------------------
+# auth.yml
+# --------------------
+# recommended keys:
+# - user
+# - password-source
+# - endpoint
+
+# --------------------
+# temp.yml
+# --------------------
+# Suggested keys:
+# - project
+# - parent.key
+# - assignee

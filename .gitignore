@@ -1,0 +1,36 @@
+# runtime cookies
+cookies.js
+
+# built-in templates that may be exported to review by
+# running: jira export-templates
+templates/attach-list
+templates/comment
+templates/component-add
+templates/components
+templates/create
+templates/createmeta
+templates/debug
+templates/edit
+templates/editmeta
+templates/epic-create
+templates/epic-list
+templates/fields
+templates/issuelinktypes
+templates/issuetypes
+templates/json
+templates/list
+templates/request
+templates/subtask
+templates/table
+templates/transition
+templates/transitions
+templates/transmeta
+templates/view
+templates/worklog
+templates/worklogs
+
+# end-user's custom stuff
+custom
+
+# third-party commands
+vendor
