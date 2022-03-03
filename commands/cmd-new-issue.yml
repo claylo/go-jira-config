@@ -1,0 +1,62 @@
+# yamllint disable rule:line-length
+custom-commands:
+  - name: new-issue
+    aliases:
+      - ni
+    help: Create new issue
+    options:
+      - name: summary
+        help: Issue summary.
+        short: s
+        type: STRING
+        required: true
+      - name: description
+        help: Long-form description.
+        short: d
+        type: STRING
+      - name: issuetype
+        help: "One of: Story, Bug, Task, Epic. Default: Story"
+        short: i
+        type: ENUM
+        default: Story
+        enum:
+          - Story
+          - Bug
+          - Task
+          - Epic
+      - name: est
+        short: o
+        help: Populates the time tracking originalEstimate field.
+        type: STRING
+      - name: label
+        short: l
+        help: One or more issue labels, separated by commas.
+        type: STRING
+      - name: test
+        help: Output the command that would be run
+        type: BOOL
+        default: false
+      - name: priority
+        short: P
+        help: Set priority level of issue. Accepts visual name of priority (case-sensitive!).
+        type: STRING
+      - name: parent
+        short: p
+        help: Parent issue key (use to create under an Epic)
+        type: STRING
+      - name: due
+        help: Due date in YYYY-MM-DD format
+        type: STRING
+    script: |-
+      {{ if options.test }}
+        {{ $cmd := "create --noedit "}}
+        {{ $cmd = $cmd | append "blah" }}
+        {{ $xlabel := "" }}
+        {{ $sumlen := len options.summary }}
+        {{ if eq "feat" (printf "%.4s" options.summary) }}{{ $xlabel = $xlabel | append "feature," }}{{end}}
+        {{ if eq "fix" (printf "%.3s" options.summary) }}{{ $xlabel = $xlabel | append "fix," }}{{end}}
+        {{ if eq "refactor" (printf "%.8s" options.summary) }}{{ $xlabel = $xlabel | append "feature," }}{{end}}
+        echo jira {{ $cmd }} label {{$xlabel}} sumlen {{$sumlen}}
+      {{ else }}
+        {{jira}} create --noedit -i {{options.issuetype}} -t create-plus -o summary="{{options.summary}}"{{ with options.description }} -o description="{{ . }}"{{ end }}{{ with options.est }} -o originalEstimate="{{ . }}"{{ end }}{{ with options.label }} -o labels="{{ . }}"{{ end }}{{ with options.priority }} -o priority="{{ . }}"{{ end }}{{ with options.parent }} -o parent="{{ . }}"{{ end }}{{ with options.due }} -o duedate="{{ . }}"{{ end }}
+      {{ end }}

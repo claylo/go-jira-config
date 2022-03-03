@@ -1,0 +1,6 @@
+# yamllint disable rule:line-length
+custom-commands:
+  - name: env
+    help: print the JIRA environment variables available to custom commands
+    script: |
+      env | grep JIRA
