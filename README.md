@@ -8,13 +8,13 @@ Shared configuration modifications for [go-jira](https://github.com/go-jira/jira
 
 Via SSH:
 
-```
+```bash
 git clone git@github.com:claylo/go-jira-config.git ~/.jira.d
 ```
 
 Or via HTTPS:
 
-```
+```bash
 git clone https://github.com/claylo/go-jira-config.git ~/.jira.d
 ```
 
@@ -22,7 +22,7 @@ git clone https://github.com/claylo/go-jira-config.git ~/.jira.d
 
 Install [go-jira](https://github.com/go-jira/jira). On macOS:
 
-```
+```bash
 brew update && brew install go-jira
 ```
 
@@ -32,7 +32,7 @@ From anywhere on your system, type `jira help`. If everything's working, custom 
 
 You can see the generated configuration this repository facilitates by running:
 
-```
+```bash
 jira conf
 ```
 
@@ -46,28 +46,37 @@ To do this, I keep a directory symlinked into my `$HOME` directory called, fanta
 work
 ├── acme
 │   └── .jira.d
-│       └── auth.yml
+│       ├── auth.yml
+│       └── defaults.yml
 ├── example
 │   └── .jira.d
-│       └── auth.yml
+│       ├── auth.yml
+│       └── defaults.yml
 └── obvious
     └── .jira.d
-        └── auth.yml
+        ├── auth.yaml
+        └── defaults.yml
 
-6 directories, 3 files
+6 directories, 6 files
 ```
 
-Each auth.yml file contains something like:
+Each `auth.yml` file contains something like:
 
 ```yaml
 endpoint: https://acme.atlassian.net
-user: clay@php.net
-password-source: keyring
+user: clay@acme.com         # changed per work project directory, clay@example.com, etc.
+password-source: keyring    # see "Keep it DRY" section below
+```
+
+Each `defaults.yml` file contains something like:
+
+```yaml
+project: FOO    # default project key for jira commands while in this directory
 ```
 
 ### Keep it DRY
 
-If all your `password-source` values are `keyring`, create a file in `~/jira.d/custom/dry.yml` and add:
+If all your `password-source` values are `keyring`, create a file in `~/.jira.d/custom/dry.yml` and add:
 
 ```yaml
 password-source: keyring
@@ -75,7 +84,7 @@ password-source: keyring
 
 ... to that, and then remove the `password-source` entries from each individual `auth.yml` file. Then you can check the assembly of dynamic configuration for jira with:
 
-```
+```bash
 jira conf
 ```
 
@@ -97,7 +106,7 @@ Which will show something like this:
 #
 #   INC(auth) ........... First filename matching auth.yml.
 #   INC(cc) ............. Custom Command(s) found in file.
-#   INC(cmd) ............ Custom Command(s) found in filename matching cmd-*.yml.
+#   INC(cmd) ............ Custom Command(s) found in filename matching cmd-*.yml
 #   INC(yml) ............ File found in a .jira.d directory with no
 #                           custom commands.
 #   SKIP(auth) .......... Skipped auth.yml file, because one was found closer
